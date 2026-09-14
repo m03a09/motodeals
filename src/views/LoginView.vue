@@ -26,53 +26,54 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="login">
-    <form @submit.prevent="onSubmit">
-      <h1>MotoDeals</h1>
+  <div
+    class="flex min-h-screen items-center justify-center bg-linear-to-br from-indigo-600 via-indigo-700 to-slate-900 px-4"
+  >
+    <div class="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl">
+      <div class="mb-8 flex flex-col items-center gap-2">
+        <span
+          class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-xl font-bold text-white"
+          >M</span
+        >
+        <h1 class="text-xl font-bold text-slate-900">MotoDeals</h1>
+        <p class="text-sm text-slate-500">Entra a tu cuenta para continuar</p>
+      </div>
 
-      <label>
-        Correo
-        <input v-model="email" type="email" required autocomplete="username" />
-      </label>
+      <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Correo</span>
+          <input
+            v-model="email"
+            type="email"
+            required
+            autocomplete="username"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+          />
+        </label>
 
-      <label>
-        Contraseña
-        <input v-model="password" type="password" required autocomplete="current-password" />
-      </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Contraseña</span>
+          <input
+            v-model="password"
+            type="password"
+            required
+            autocomplete="current-password"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+          />
+        </label>
 
-      <p v-if="auth.error" class="error">{{ auth.error }}</p>
+        <p v-if="auth.error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {{ auth.error }}
+        </p>
 
-      <button type="submit" :disabled="enviando">
-        {{ enviando ? 'Entrando...' : 'Entrar' }}
-      </button>
-    </form>
+        <button
+          type="submit"
+          :disabled="enviando"
+          class="mt-2 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ enviando ? 'Entrando...' : 'Entrar' }}
+        </button>
+      </form>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.login {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 320px;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.error {
-  color: #c0392b;
-  margin: 0;
-}
-</style>

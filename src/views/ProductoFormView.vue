@@ -138,126 +138,193 @@ async function registrarVenta() {
     guardando.value = false
   }
 }
+
+const inputClass =
+  'w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
 </script>
 
 <template>
-  <div class="producto-form">
-    <h1>{{ modoEdicion ? 'Editar producto' : 'Agregar producto' }}</h1>
+  <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+    <div class="mb-6 flex items-center gap-3">
+      <router-link
+        :to="{ name: 'inventario' }"
+        class="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+        aria-label="Volver al inventario"
+      >
+        ←
+      </router-link>
+      <h1 class="text-2xl font-bold text-slate-900">
+        {{ modoEdicion ? 'Editar producto' : 'Agregar producto' }}
+      </h1>
+    </div>
 
-    <p v-if="!auth.clienteId" class="error">
+    <p v-if="!auth.clienteId" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
       Tu cuenta (superadmin) no pertenece a ningún cliente, así que no hay un inventario donde
-      guardar este producto. Ingresa con la cuenta de un cliente para agregar o
-      editar productos.
+      guardar este producto. Ingresa con la cuenta de un cliente para agregar o editar productos.
     </p>
 
-    <p v-else-if="cargando">Cargando...</p>
+    <p v-else-if="cargando" class="text-slate-500">Cargando...</p>
 
-    <form v-else @submit.prevent="guardar">
-      <label>
-        Tipo
-        <select v-model="tipo" :disabled="modoEdicion" @change="inicializarDetalles">
+    <form
+      v-else
+      class="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      @submit.prevent="guardar"
+    >
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Tipo</span>
+        <select
+          v-model="tipo"
+          :disabled="modoEdicion"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:bg-slate-100 disabled:text-slate-500"
+          @change="inicializarDetalles"
+        >
           <option value="vehiculo">Vehículo</option>
           <option value="articulo">Artículo</option>
         </select>
       </label>
 
-      <fieldset>
-        <legend>Detalles</legend>
-        <label v-for="campo in CAMPOS_DETALLES[tipo]" :key="campo">
-          {{ campo }}
-          <input v-model="detalles[campo]" type="text" />
-        </label>
+      <fieldset class="rounded-lg border border-slate-200 p-4">
+        <legend class="px-1 text-sm font-semibold text-slate-700">Detalles</legend>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label v-for="campo in CAMPOS_DETALLES[tipo]" :key="campo" class="flex flex-col gap-1.5">
+            <span class="text-sm font-medium capitalize text-slate-700">{{ campo }}</span>
+            <input v-model="detalles[campo]" type="text" :class="inputClass" />
+          </label>
+        </div>
       </fieldset>
 
-      <label>
-        Valor de entrada
-        <input v-model.number="valorEntrada" type="number" min="0" required />
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Valor de entrada</span>
+        <input v-model.number="valorEntrada" type="number" min="0" required :class="inputClass" />
       </label>
 
-      <fieldset>
-        <legend>Mejoras</legend>
-        <div v-for="(mejora, i) in mejoras" :key="i" class="fila">
-          <input v-model="mejora.descripcion" type="text" placeholder="Descripción" />
-          <input v-model.number="mejora.valor" type="number" min="0" placeholder="Valor" />
-          <button type="button" @click="quitarMejora(i)">✕</button>
+      <fieldset class="rounded-lg border border-slate-200 p-4">
+        <legend class="px-1 text-sm font-semibold text-slate-700">Mejoras</legend>
+        <div v-for="(mejora, i) in mejoras" :key="i" class="mb-2 flex gap-2">
+          <input
+            v-model="mejora.descripcion"
+            type="text"
+            placeholder="Descripción"
+            :class="inputClass"
+          />
+          <input
+            v-model.number="mejora.valor"
+            type="number"
+            min="0"
+            placeholder="Valor"
+            class="w-32 shrink-0"
+            :class="inputClass"
+          />
+          <button
+            type="button"
+            class="shrink-0 rounded-lg border border-slate-300 px-2.5 text-slate-500 transition hover:bg-red-50 hover:text-red-600"
+            @click="quitarMejora(i)"
+          >
+            ✕
+          </button>
         </div>
-        <button type="button" @click="agregarMejora">+ Agregar mejora</button>
+        <button
+          type="button"
+          class="mt-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+          @click="agregarMejora"
+        >
+          + Agregar mejora
+        </button>
       </fieldset>
 
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
-      <div class="acciones">
-        <button type="submit" :disabled="guardando">
+      <div class="flex items-center gap-3">
+        <button
+          type="submit"
+          :disabled="guardando"
+          class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
           {{ guardando ? 'Guardando...' : 'Guardar' }}
         </button>
-        <router-link :to="{ name: 'inventario' }">Cancelar</router-link>
+        <router-link
+          :to="{ name: 'inventario' }"
+          class="text-sm font-medium text-slate-600 hover:text-slate-900"
+        >
+          Cancelar
+        </router-link>
       </div>
     </form>
 
-    <template v-if="modoEdicion && productoOriginal?.estado === 'disponible' && auth.tienePermiso('ventas')">
-      <hr />
-      <button v-if="!mostrarVenta" type="button" @click="abrirVenta">
+    <template
+      v-if="modoEdicion && productoOriginal?.estado === 'disponible' && auth.tienePermiso('ventas')"
+    >
+      <div class="my-6 border-t border-slate-200" />
+
+      <button
+        v-if="!mostrarVenta"
+        type="button"
+        class="w-full rounded-xl border border-dashed border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+        @click="abrirVenta"
+      >
         Registrar venta
       </button>
 
-      <form v-else @submit.prevent="registrarVenta">
-        <h2>Registrar venta</h2>
+      <form
+        v-else
+        class="flex flex-col gap-5 rounded-xl border border-emerald-200 bg-emerald-50/40 p-6 shadow-sm"
+        @submit.prevent="registrarVenta"
+      >
+        <h2 class="text-lg font-bold text-slate-900">Registrar venta</h2>
 
-        <label>
-          Valor de venta
-          <input v-model.number="valorVenta" type="number" min="0" required />
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-slate-700">Valor de venta</span>
+          <input
+            v-model.number="valorVenta"
+            type="number"
+            min="0"
+            required
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+          />
         </label>
 
-        <fieldset>
-          <legend>Comisiones</legend>
-          <div v-for="(comision, i) in comisiones" :key="i" class="fila">
-            <input v-model="comision.concepto" type="text" placeholder="Concepto" />
-            <input v-model.number="comision.valor" type="number" min="0" placeholder="Valor" />
-            <button type="button" @click="quitarComision(i)">✕</button>
+        <fieldset class="rounded-lg border border-slate-200 bg-white p-4">
+          <legend class="px-1 text-sm font-semibold text-slate-700">Comisiones</legend>
+          <div v-for="(comision, i) in comisiones" :key="i" class="mb-2 flex gap-2">
+            <input
+              v-model="comision.concepto"
+              type="text"
+              placeholder="Concepto"
+              :class="inputClass"
+            />
+            <input
+              v-model.number="comision.valor"
+              type="number"
+              min="0"
+              placeholder="Valor"
+              class="w-32 shrink-0"
+              :class="inputClass"
+            />
+            <button
+              type="button"
+              class="shrink-0 rounded-lg border border-slate-300 px-2.5 text-slate-500 transition hover:bg-red-50 hover:text-red-600"
+              @click="quitarComision(i)"
+            >
+              ✕
+            </button>
           </div>
-          <button type="button" @click="agregarComision">+ Agregar comisión</button>
+          <button
+            type="button"
+            class="mt-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+            @click="agregarComision"
+          >
+            + Agregar comisión
+          </button>
         </fieldset>
 
-        <button type="submit" :disabled="guardando">
+        <button
+          type="submit"
+          :disabled="guardando"
+          class="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
           {{ guardando ? 'Guardando...' : 'Confirmar venta' }}
         </button>
       </form>
     </template>
   </div>
 </template>
-
-<style scoped>
-.producto-form {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.fila {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.acciones {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.error {
-  color: #c0392b;
-}
-</style>

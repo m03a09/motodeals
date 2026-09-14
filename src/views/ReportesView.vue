@@ -27,10 +27,14 @@ function totalComisiones(p: Producto) {
 }
 
 function nombreProducto(p: Producto) {
-  return (p.detalles.marca ?? p.detalles.nombre ?? '—') + (p.detalles.modelo ? ` ${p.detalles.modelo}` : '')
+  return (
+    (p.detalles.marca ?? p.detalles.nombre ?? '—') + (p.detalles.modelo ? ` ${p.detalles.modelo}` : '')
+  )
 }
 
-const totalVentas = computed(() => vendidos.value.reduce((acc, p) => acc + (p.salida?.valor_venta ?? 0), 0))
+const totalVentas = computed(() =>
+  vendidos.value.reduce((acc, p) => acc + (p.salida?.valor_venta ?? 0), 0),
+)
 const totalGanancia = computed(() =>
   vendidos.value.reduce((acc, p) => acc + (calcularGanancia(p) ?? 0), 0),
 )
@@ -43,134 +47,90 @@ const formatoMoneda = new Intl.NumberFormat('es-CO', {
 </script>
 
 <template>
-  <div class="reportes">
-    <header>
-      <h1>Reportes</h1>
-      <router-link :to="{ name: 'inventario' }">← Volver al inventario</router-link>
-    </header>
+  <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <h1 class="mb-6 text-2xl font-bold text-slate-900">Reportes</h1>
 
-    <p v-if="!auth.clienteId" class="aviso">
+    <p
+      v-if="!auth.clienteId"
+      class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+    >
       Tu cuenta (superadmin) no pertenece a ningún cliente, así que no hay un inventario del cual
       sacar reportes.
     </p>
 
     <template v-else>
-      <div class="resumen">
-        <div class="tarjeta">
-          <span class="etiqueta">Vehículos vendidos</span>
-          <span class="valor">{{ vendidos.length }}</span>
+      <div class="mb-8 grid gap-4 sm:grid-cols-3">
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-sm text-slate-500">Vehículos vendidos</p>
+          <p class="mt-1 text-2xl font-bold text-slate-900">{{ vendidos.length }}</p>
         </div>
-        <div class="tarjeta">
-          <span class="etiqueta">Valor total vendido</span>
-          <span class="valor">{{ formatoMoneda.format(totalVentas) }}</span>
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-sm text-slate-500">Valor total vendido</p>
+          <p class="mt-1 text-2xl font-bold text-slate-900">
+            {{ formatoMoneda.format(totalVentas) }}
+          </p>
         </div>
-        <div class="tarjeta">
-          <span class="etiqueta">Ganancia total</span>
-          <span class="valor">{{ formatoMoneda.format(totalGanancia) }}</span>
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <p class="text-sm text-emerald-700">Ganancia total</p>
+          <p class="mt-1 text-2xl font-bold text-emerald-700">
+            {{ formatoMoneda.format(totalGanancia) }}
+          </p>
         </div>
       </div>
 
-      <p v-if="vendidos.length === 0">Todavía no se ha registrado ninguna venta.</p>
+      <div
+        v-if="vendidos.length === 0"
+        class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center text-slate-500"
+      >
+        Todavía no se ha registrado ninguna venta.
+      </div>
 
-      <table v-else>
-        <thead>
-          <tr>
-            <th>Vehículo</th>
-            <th>Valor entrada</th>
-            <th>Mejoras</th>
-            <th>Valor venta</th>
-            <th>Comisiones</th>
-            <th>Ganancia</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in vendidos" :key="p.id">
-            <td>{{ nombreProducto(p) }}</td>
-            <td>{{ formatoMoneda.format(p.ingreso.valor_entrada) }}</td>
-            <td>{{ formatoMoneda.format(totalMejoras(p)) }}</td>
-            <td>{{ formatoMoneda.format(p.salida?.valor_venta ?? 0) }}</td>
-            <td>{{ formatoMoneda.format(totalComisiones(p)) }}</td>
-            <td class="ganancia">{{ formatoMoneda.format(calcularGanancia(p) ?? 0) }}</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3">Totales</td>
-            <td>{{ formatoMoneda.format(totalVentas) }}</td>
-            <td></td>
-            <td class="ganancia">{{ formatoMoneda.format(totalGanancia) }}</td>
-          </tr>
-        </tfoot>
-      </table>
+      <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+              <th class="px-4 py-3 font-medium">Vehículo</th>
+              <th class="px-4 py-3 font-medium">Valor entrada</th>
+              <th class="px-4 py-3 font-medium">Mejoras</th>
+              <th class="px-4 py-3 font-medium">Valor venta</th>
+              <th class="px-4 py-3 font-medium">Comisiones</th>
+              <th class="px-4 py-3 font-medium">Ganancia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="p in vendidos"
+              :key="p.id"
+              class="border-b border-slate-100 last:border-0 hover:bg-slate-50"
+            >
+              <td class="px-4 py-3 font-medium text-slate-900">{{ nombreProducto(p) }}</td>
+              <td class="px-4 py-3 text-slate-600">
+                {{ formatoMoneda.format(p.ingreso.valor_entrada) }}
+              </td>
+              <td class="px-4 py-3 text-slate-600">{{ formatoMoneda.format(totalMejoras(p)) }}</td>
+              <td class="px-4 py-3 text-slate-600">
+                {{ formatoMoneda.format(p.salida?.valor_venta ?? 0) }}
+              </td>
+              <td class="px-4 py-3 text-slate-600">
+                {{ formatoMoneda.format(totalComisiones(p)) }}
+              </td>
+              <td class="px-4 py-3 font-semibold text-emerald-700">
+                {{ formatoMoneda.format(calcularGanancia(p) ?? 0) }}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-slate-300 font-semibold text-slate-900">
+              <td class="px-4 py-3" colspan="3">Totales</td>
+              <td class="px-4 py-3">{{ formatoMoneda.format(totalVentas) }}</td>
+              <td class="px-4 py-3"></td>
+              <td class="px-4 py-3 text-emerald-700">
+                {{ formatoMoneda.format(totalGanancia) }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </template>
   </div>
 </template>
-
-<style scoped>
-.reportes {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
-
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.resumen {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.tarjeta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  min-width: 160px;
-}
-
-.etiqueta {
-  font-size: 0.85rem;
-  color: #666;
-}
-
-.valor {
-  font-size: 1.4rem;
-  font-weight: bold;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 0.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-tfoot td {
-  font-weight: bold;
-  border-top: 2px solid #333;
-  border-bottom: none;
-}
-
-.ganancia {
-  font-weight: bold;
-  color: #1e7e34;
-}
-
-.aviso {
-  color: #c0392b;
-}
-</style>
