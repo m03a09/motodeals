@@ -1,0 +1,70 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function clienteIdDelUsuario() {
+      return userDoc().data.clienteId;
+    }
+
+    // El superadmin (tú) administra todos los clientes. No pertenece a ningún clienteId.
+    function esSuperAdmin() {
+      return isSignedIn() && userDoc().data.rol == 'superadmin';
+    }
+
+    function esDelCliente(clienteId) {
+      return isSignedIn() && clienteIdDelUsuario() == clienteId;
+    }
+
+    function tienePermiso(clienteId, permiso) {
+      return esDelCliente(clienteId) && userDoc().data.permisos[permiso] == true;
+    }
+
+    function clienteActivo(clienteId) {
+      return get(/databases/$(database)/documents/clientes/$(clienteId)).data.activo_hasta > request.time;
+    }
+
+    // Cada usuario solo puede leer su propio documento (para saber su clienteId/rol/permisos).
+    // Los usuarios se crean/editan desde el backend (Admin SDK) o consola, no desde el cliente.
+    match /usuarios/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /clientes/{clienteId} {
+      allow read: if esDelCliente(clienteId) || esSuperAdmin();
+      allow write: if esSuperAdmin();
+
+      match /productos/{productoId} {
+        // Ver el inventario: cualquier usuario del cliente (con cualquier permiso), mientras la prueba esté activa.
+        allow read: if esDelCliente(clienteId) && clienteActivo(clienteId);
+        allow read: if esSuperAdmin();
+
+        // Crear producto o editar ingreso/detalles: requiere permiso "crear_editar".
+        // No se permite tocar el campo "salida" desde esta vía (eso es "ventas").
+        allow create: if tienePermiso(clienteId, 'crear_editar') && clienteActivo(clienteId)
+                      && !('salida' in request.resource.data);
+
+        allow update: if clienteActivo(clienteId) && (
+                        // Marcar como vendido / editar la venta: solo permiso "ventas".
+                        (tienePermiso(clienteId, 'ventas')
+                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['salida', 'estado']))
+                        ||
+                        // Editar ingreso/detalles (no la venta): solo permiso "crear_editar".
+                        (tienePermiso(clienteId, 'crear_editar')
+                          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['salida']))
+                      );
+
+        allow delete: if tienePermiso(clienteId, 'crear_editar');
+      }
+    }
+  }
+}
