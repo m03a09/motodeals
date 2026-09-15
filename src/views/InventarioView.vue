@@ -75,17 +75,26 @@ const estiloEstado: Record<string, string> = {
               producto.detalles.modelo
             }}</span>
           </h2>
-          <span
-            class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize"
-            :class="estiloEstado[producto.estado]"
-          >
-            {{ producto.estado }}
-          </span>
+          <div class="flex shrink-0 flex-col items-end gap-1">
+            <span
+              class="rounded-full px-2 py-0.5 text-xs font-medium capitalize"
+              :class="estiloEstado[producto.estado]"
+            >
+              {{ producto.estado }}
+            </span>
+            <span
+              v-if="producto.tipo === 'venta_terceros'"
+              class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
+            >
+              Terceros
+            </span>
+          </div>
         </div>
 
-        <p class="text-sm text-slate-500">
+        <p v-if="producto.tipo !== 'venta_terceros'" class="text-sm text-slate-500">
           Entrada: {{ formatoMoneda.format(producto.ingreso.valor_entrada) }}
         </p>
+        <p v-else class="text-sm text-slate-500">Intermediación (no es inventario propio)</p>
 
         <p v-if="producto.salida" class="mt-1 text-sm font-semibold text-emerald-700">
           Ganancia: {{ formatoMoneda.format(calcularGanancia(producto) ?? 0) }}

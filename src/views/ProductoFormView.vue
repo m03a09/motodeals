@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import MoneyInput from '@/components/MoneyInput.vue'
 import {
   useProductosStore,
   type TipoProducto,
@@ -18,9 +19,33 @@ const productosStore = useProductosStore()
 const productoId = computed(() => route.params.id as string | undefined)
 const modoEdicion = computed(() => productoId.value !== undefined)
 
-const CAMPOS_DETALLES: Record<TipoProducto, string[]> = {
-  vehiculo: ['marca', 'modelo', 'placa', 'kilometraje'],
-  articulo: ['nombre', 'marca', 'categoria', 'talla'],
+interface ConfigTipo {
+  etiqueta: string
+  campos: string[]
+  // false = el cliente no compra el producto (ej. venta de terceros: solo intermedia),
+  // así que se ocultan "Valor de entrada" y "Mejoras" y quedan en 0/vacío.
+  requiereIngreso: boolean
+}
+
+// Única fuente de verdad para los tipos de producto: agregar un tipo nuevo aquí
+// (y en TipoProducto en stores/productos.ts) es suficiente para que aparezca en el
+// select y con sus propios campos — no hay que tocar el resto del formulario.
+const TIPOS: Record<TipoProducto, ConfigTipo> = {
+  vehiculo: {
+    etiqueta: 'Vehículo',
+    campos: ['marca', 'modelo', 'placa', 'referencia', 'color'],
+    requiereIngreso: true,
+  },
+  articulo: {
+    etiqueta: 'Artículo',
+    campos: ['nombre', 'marca', 'categoria', 'talla'],
+    requiereIngreso: true,
+  },
+  venta_terceros: {
+    etiqueta: 'Venta de terceros',
+    campos: ['marca', 'modelo', 'placa', 'referencia', 'color', 'propietario'],
+    requiereIngreso: false,
+  },
 }
 
 const cargando = ref(false)
@@ -33,9 +58,14 @@ const valorEntrada = ref<number>(0)
 const mejoras = ref<Mejora[]>([])
 const detalles = ref<Record<string, string>>({})
 
+const requiereIngreso = computed(() => TIPOS[tipo.value].requiereIngreso)
+const etiquetaValorVenta = computed(() =>
+  tipo.value === 'venta_terceros' ? 'Comisión cobrada por la venta' : 'Valor de venta',
+)
+
 function inicializarDetalles() {
   const campos: Record<string, string> = {}
-  for (const campo of CAMPOS_DETALLES[tipo.value]) {
+  for (const campo of TIPOS[tipo.value].campos) {
     campos[campo] = detalles.value[campo] ?? ''
   }
   detalles.value = campos
@@ -77,17 +107,23 @@ async function guardar() {
   guardando.value = true
   error.value = null
   try {
+    // En tipos sin ingreso (ej. venta de terceros) el cliente no compra el producto,
+    // así que no hay valor de entrada ni mejoras que registrar: se guardan en 0/vacío
+    // sin importar lo que haya quedado en el formulario (por si se cambió de tipo).
+    const valorEntradaFinal = requiereIngreso.value ? valorEntrada.value : 0
+    const mejorasFinal = requiereIngreso.value ? mejoras.value : []
+
     if (modoEdicion.value) {
       await productosStore.editarProducto(auth.clienteId, productoId.value!, {
         detalles: detalles.value,
-        valor_entrada: valorEntrada.value,
-        mejoras: mejoras.value,
+        valor_entrada: valorEntradaFinal,
+        mejoras: mejorasFinal,
       })
     } else {
       await productosStore.agregarProducto(auth.clienteId, {
         tipo: tipo.value,
-        valor_entrada: valorEntrada.value,
-        mejoras: mejoras.value,
+        valor_entrada: valorEntradaFinal,
+        mejoras: mejorasFinal,
         detalles: detalles.value,
       })
     }
@@ -139,8 +175,11 @@ async function registrarVenta() {
   }
 }
 
-const inputClass =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
+// Sin utilidad de ancho: cada input decide su ancho por separado (w-full, flex-1, w-32...)
+// para no chocar con esta clase base cuando se combinan (ver filas de mejoras/comisiones).
+const inputBase =
+  'rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30'
+const inputClass = `w-full ${inputBase}`
 </script>
 
 <template>
@@ -178,42 +217,41 @@ const inputClass =
           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:bg-slate-100 disabled:text-slate-500"
           @change="inicializarDetalles"
         >
-          <option value="vehiculo">Vehículo</option>
-          <option value="articulo">Artículo</option>
+          <option v-for="(cfg, key) in TIPOS" :key="key" :value="key">{{ cfg.etiqueta }}</option>
         </select>
       </label>
 
-      <fieldset class="rounded-lg border border-slate-200 p-4">
+      <fieldset class="min-w-0 rounded-lg border border-slate-200 p-4">
         <legend class="px-1 text-sm font-semibold text-slate-700">Detalles</legend>
         <div class="grid gap-4 sm:grid-cols-2">
-          <label v-for="campo in CAMPOS_DETALLES[tipo]" :key="campo" class="flex flex-col gap-1.5">
+          <label v-for="campo in TIPOS[tipo].campos" :key="campo" class="flex flex-col gap-1.5">
             <span class="text-sm font-medium capitalize text-slate-700">{{ campo }}</span>
             <input v-model="detalles[campo]" type="text" :class="inputClass" />
           </label>
         </div>
       </fieldset>
 
-      <label class="flex flex-col gap-1.5">
+      <label v-if="requiereIngreso" class="flex flex-col gap-1.5">
         <span class="text-sm font-medium text-slate-700">Valor de entrada</span>
-        <input v-model.number="valorEntrada" type="number" min="0" required :class="inputClass" />
+        <MoneyInput v-model="valorEntrada" required :class="inputClass" />
       </label>
 
-      <fieldset class="rounded-lg border border-slate-200 p-4">
+      <fieldset v-if="requiereIngreso" class="min-w-0 rounded-lg border border-slate-200 p-4">
         <legend class="px-1 text-sm font-semibold text-slate-700">Mejoras</legend>
         <div v-for="(mejora, i) in mejoras" :key="i" class="mb-2 flex gap-2">
           <input
             v-model="mejora.descripcion"
             type="text"
             placeholder="Descripción"
-            :class="inputClass"
+            required
+            class="min-w-0 flex-1"
+            :class="inputBase"
           />
-          <input
-            v-model.number="mejora.valor"
-            type="number"
-            min="0"
+          <MoneyInput
+            v-model="mejora.valor"
             placeholder="Valor"
             class="w-32 shrink-0"
-            :class="inputClass"
+            :class="inputBase"
           />
           <button
             type="button"
@@ -273,32 +311,30 @@ const inputClass =
         <h2 class="text-lg font-bold text-slate-900">Registrar venta</h2>
 
         <label class="flex flex-col gap-1.5">
-          <span class="text-sm font-medium text-slate-700">Valor de venta</span>
-          <input
-            v-model.number="valorVenta"
-            type="number"
-            min="0"
+          <span class="text-sm font-medium text-slate-700">{{ etiquetaValorVenta }}</span>
+          <MoneyInput
+            v-model="valorVenta"
             required
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
           />
         </label>
 
-        <fieldset class="rounded-lg border border-slate-200 bg-white p-4">
+        <fieldset class="min-w-0 rounded-lg border border-slate-200 bg-white p-4">
           <legend class="px-1 text-sm font-semibold text-slate-700">Comisiones</legend>
           <div v-for="(comision, i) in comisiones" :key="i" class="mb-2 flex gap-2">
             <input
               v-model="comision.concepto"
               type="text"
               placeholder="Concepto"
-              :class="inputClass"
+              required
+              class="min-w-0 flex-1"
+              :class="inputBase"
             />
-            <input
-              v-model.number="comision.valor"
-              type="number"
-              min="0"
+            <MoneyInput
+              v-model="comision.valor"
               placeholder="Valor"
               class="w-32 shrink-0"
-              :class="inputClass"
+              :class="inputBase"
             />
             <button
               type="button"

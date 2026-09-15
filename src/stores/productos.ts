@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/firebase/config'
 
-export type TipoProducto = 'vehiculo' | 'articulo'
+export type TipoProducto = 'vehiculo' | 'articulo' | 'venta_terceros'
 export type EstadoProducto = 'disponible' | 'vendido'
 
 export interface Mejora {
@@ -39,7 +39,12 @@ export interface Salida {
   fecha_salida: Timestamp
 }
 
-// detalles: vehiculo -> { marca, modelo, placa, kilometraje }; articulo -> { nombre, marca, categoria, talla }
+// detalles: vehiculo -> { marca, modelo, placa, referencia, color }
+//           articulo -> { nombre, marca, categoria, talla }
+//           venta_terceros -> { marca, modelo, placa, referencia, color, propietario }
+//             (el cliente no compra la moto, solo la intermedia para el dueño real;
+//              ingreso.valor_entrada queda en 0 y salida.valor_venta representa su
+//              comisión cobrada, de la que a su vez se descuentan comisiones como "eymar")
 export type Detalles = Record<string, string | number>
 
 export interface Producto {

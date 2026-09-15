@@ -30,12 +30,12 @@ async function onSubmit() {
     class="flex min-h-screen items-center justify-center bg-linear-to-br from-indigo-600 via-indigo-700 to-slate-900 px-4"
   >
     <div class="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl">
-      <div class="mb-8 flex flex-col items-center gap-2">
-        <span
-          class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-xl font-bold text-white"
-          >M</span
-        >
-        <h1 class="text-xl font-bold text-slate-900">MotoDeals</h1>
+      <div class="mb-8 flex flex-col items-center gap-3">
+        <img
+          src="/logo.jpg"
+          alt="MotoDeals"
+          class="h-24 w-24 rounded-full object-cover shadow-md ring-4 ring-white sm:h-28 sm:w-28"
+        />
         <p class="text-sm text-slate-500">Entra a tu cuenta para continuar</p>
       </div>
 

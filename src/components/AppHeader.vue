@@ -21,10 +21,7 @@ const etiquetaRol: Record<string, string> = {
     <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
       <div class="flex items-center gap-6">
         <router-link :to="{ name: 'inventario' }" class="flex items-center gap-2">
-          <span
-            class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white"
-            >M</span
-          >
+          <img src="/logo.jpg" alt="MotoDeals" class="h-9 w-9 shrink-0 rounded-full object-cover" />
           <span class="text-lg font-bold tracking-tight text-slate-900">MotoDeals</span>
         </router-link>
 
