@@ -35,6 +35,11 @@ const router = createRouter({
       component: () => import('@/views/ReportesView.vue'),
       meta: { permiso: 'reportes' },
     },
+    {
+      path: '/prueba-vencida',
+      name: 'prueba-vencida',
+      component: () => import('@/views/PruebaVencidaView.vue'),
+    },
   ],
 })
 
@@ -62,6 +67,14 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === 'login' && auth.estaAutenticado) {
+    return auth.pruebaVencida ? { name: 'prueba-vencida' } : { name: 'inventario' }
+  }
+
+  // Cliente con la prueba vencida: no ve nada de la app salvo la pantalla de aviso.
+  if (auth.estaAutenticado && auth.pruebaVencida && to.name !== 'prueba-vencida') {
+    return { name: 'prueba-vencida' }
+  }
+  if (to.name === 'prueba-vencida' && auth.estaAutenticado && !auth.pruebaVencida) {
     return { name: 'inventario' }
   }
 

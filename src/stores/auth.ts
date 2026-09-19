@@ -38,6 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
   const firebaseUser = ref<User | null>(null)
   const perfil = ref<PerfilUsuario | null>(null)
   const clienteConfig = ref<ClienteConfig | null>(null)
+  const activoHasta = ref<Date | null>(null)
   const cargando = ref(true) // true mientras no se resuelve el estado inicial de auth
   const error = ref<string | null>(null)
 
@@ -45,6 +46,14 @@ export const useAuthStore = defineStore('auth', () => {
   const esSuperAdmin = computed(() => perfil.value?.rol === 'superadmin')
   const clienteId = computed(() => perfil.value?.clienteId ?? null)
   const permisos = computed(() => perfil.value?.permisos ?? null)
+
+  // El superadmin nunca queda bloqueado. Un usuario "cliente" sí, en cuanto pasa la fecha
+  // activo_hasta de su cliente — aunque el login (Firebase Auth) haya funcionado, porque
+  // Auth no sabe nada de esto: solo lo saben las reglas de Firestore para productos/clientes.
+  const pruebaVencida = computed(() => {
+    if (esSuperAdmin.value || !clienteId.value || !activoHasta.value) return false
+    return activoHasta.value.getTime() < Date.now()
+  })
 
   function tienePermiso(permiso: keyof Permisos): boolean {
     if (esSuperAdmin.value) return true
@@ -58,15 +67,17 @@ export const useAuthStore = defineStore('auth', () => {
     if (perfil.value?.clienteId) {
       try {
         const clienteSnap = await getDoc(doc(db, 'clientes', perfil.value.clienteId))
-        clienteConfig.value = clienteSnap.exists()
-          ? ((clienteSnap.data().config as ClienteConfig) ?? { comisiones_default: [] })
-          : null
+        const datos = clienteSnap.data()
+        clienteConfig.value = datos?.config ?? { comisiones_default: [] }
+        activoHasta.value = datos?.activo_hasta ? datos.activo_hasta.toDate() : null
       } catch (e) {
         console.error('No se pudo cargar la configuración del cliente:', e)
         clienteConfig.value = null
+        activoHasta.value = null
       }
     } else {
       clienteConfig.value = null
+      activoHasta.value = null
     }
   }
 
@@ -108,12 +119,14 @@ export const useAuthStore = defineStore('auth', () => {
     firebaseUser,
     perfil,
     clienteConfig,
+    activoHasta,
     cargando,
     error,
     estaAutenticado,
     esSuperAdmin,
     clienteId,
     permisos,
+    pruebaVencida,
     tienePermiso,
     iniciarListener,
     login,

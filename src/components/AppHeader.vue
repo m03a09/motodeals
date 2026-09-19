@@ -25,7 +25,7 @@ const etiquetaRol: Record<string, string> = {
           <span class="text-lg font-bold tracking-tight text-slate-900">MotoDeals</span>
         </router-link>
 
-        <nav class="hidden items-center gap-1 sm:flex">
+        <nav v-if="!auth.pruebaVencida" class="hidden items-center gap-1 sm:flex">
           <router-link
             :to="{ name: 'inventario' }"
             class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
